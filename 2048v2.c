@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 struct tile {
     int pos_x;
@@ -38,8 +39,15 @@ int get_idx(int x, int y) {
     return ret;
 }
 
-static void print_field_debug() 
-{
+static void cp_field(Tile src[16], Tile dest[16]) {
+    for (int i = 0; i < 16; i++) {
+        dest[i].pos_x = src[i].pos_x;
+        dest[i].pos_y = src[i].pos_y;
+        dest[i].val = src[i].val;
+    }
+}
+
+static void print_field_debug() {
     for (int y = count_row - 1; y >= 0; y--) {
         for (int x = 0; x < count_col; x++) {
             Tile t = array[get_idx(x, y)];
@@ -50,8 +58,7 @@ static void print_field_debug()
     printf("\n");
 }
 
-static void print_field() 
-{
+static void print_field() {
     for (int y = count_col - 1; y >= 0; y--) {
         for (int x = 0; x < count_row; x++) {
             printf("%d ", array[get_idx(x, y)].val);
@@ -61,8 +68,7 @@ static void print_field()
     printf("\n");
 }
 
-static int count_free_tiles() 
-{
+static int count_free_tiles() {
     int ret = 0;
 
     for (int i = 0; i < size; i++) {
@@ -74,8 +80,7 @@ static int count_free_tiles()
     return ret;
 }
 
-static int spawn()
-{
+static void spawn() {
     int counter = 0;
     int rndm_tile = rand() % count_free_tiles(size);
     int rndm = rand() % 10;
@@ -91,17 +96,17 @@ static int spawn()
 
     for (int i = 0; i < size; i++) {
         if (!array[i].val && counter == rndm_tile) {
-            printf("spawn idx: %d\n\n", i);
             array[i].val = rndm;
-            return rndm;
+            return;
         } else if (!array[i].val) {
             counter++;
         }
     }
 }
 
-static void move_right() {
-    for (int y = count_row - 1; y >= 0; y--) {
+static int move_right() {
+    int moves = 0;
+    for (int y = 0; y < count_row; y++) {
         int counter = 0;
         Tile last;
 
@@ -112,12 +117,19 @@ static void move_right() {
 
             if (!current.val) {
                 counter++;
+                for (int i = 0; i < current.pos_x; i++) {
+                    if (array[get_idx(i, y)].val) {
+                        moves++;
+                        break;
+                    }
+                }
             } else if (last.val == current.val) {
                 array[get_idx(last.pos_x, last.pos_y)].val = array[get_idx(last.pos_x, last.pos_y)].val * 2;
                 array[get_idx(current.pos_x, current.pos_y)].val = 0;
 
                 counter++;
                 last.val = -1;
+                moves++;
             } else if (counter) {
                 int temp = current.val;
 
@@ -125,14 +137,17 @@ static void move_right() {
                 array[get_idx(x + counter, y)].val = temp;
 
                 last = array[get_idx(x + counter, y)];
+                moves++; 
             } else {
                 last = array[get_idx(x, y)];
             }
         }
     }
+    return moves;
 }
 
-static void move_left() {
+static int move_left() {
+    int moves = 0;
     for (int y = count_row - 1; y >= 0; y--) {
         int counter = 0;
         Tile last;
@@ -143,12 +158,19 @@ static void move_left() {
 
             if (!current.val) {
                 counter++;
+                for (int i = current.pos_x; i < count_col; i++) {
+                    if (array[get_idx(i, y)].val) {
+                        moves++;
+                        break;
+                    }
+                }
             } else if (last.val == current.val) {
                 array[get_idx(last.pos_x, last.pos_y)].val = array[get_idx(last.pos_x, last.pos_y)].val * 2;
                 array[get_idx(current.pos_x, current.pos_y)].val = 0;
 
                 counter++;
                 last.val = -1;
+                moves++;
             } else if (counter) {
                 int temp = current.val;
 
@@ -156,14 +178,17 @@ static void move_left() {
                 array[get_idx(x - counter, y)].val = temp;
 
                 last = array[get_idx(x - counter, y)];
+                moves++;
             } else {
                 last = array[get_idx(x, y)];
             }
         }
     }
+    return moves;
 }
 
-static void move_up() {
+static int move_up() {
+    int moves = 0;
     for (int x = 0; x < count_col; x++) {
         int counter = 0;
         Tile last;
@@ -174,12 +199,19 @@ static void move_up() {
 
             if (!current.val) {
                 counter++;
+                for (int i = 0; i < current.pos_y; i++) {
+                    if (array[get_idx(x, i)].val) {
+                        moves++;
+                        break;
+                    }
+                }
             } else if (last.val == current.val) {
                 array[get_idx(last.pos_x, last.pos_y)].val = array[get_idx(last.pos_x, last.pos_y)].val * 2;
                 array[get_idx(current.pos_x, current.pos_y)].val = 0;
 
                 counter++;
                 last.val = -1;
+                moves++;
             } else if (counter) {
                 int temp = current.val;
 
@@ -187,14 +219,17 @@ static void move_up() {
                 array[get_idx(x, y + counter)].val = temp;
 
                 last = array[get_idx(x, y + counter)];
+                moves++;
             } else {
                 last = array[get_idx(x, y)];
             }
         }
     }
+    return moves;
 }
 
-static void move_down() {
+static int move_down() {
+    int moves = 0;
     for (int x = 0; x < count_col; x++) {
         int counter = 0;
         Tile last;
@@ -205,12 +240,19 @@ static void move_down() {
 
             if (!current.val) {
                 counter++;
+                for (int i = current.pos_y; i < count_row; i++) {
+                    if (array[get_idx(x, i)].val) {
+                        moves++;
+                        break;
+                    }
+                }
             } else if (last.val == current.val) {
                 array[get_idx(last.pos_x, last.pos_y)].val = array[get_idx(last.pos_x, last.pos_y)].val * 2;
                 array[get_idx(current.pos_x, current.pos_y)].val = 0;
 
                 counter++;
                 last.val = -1;
+                moves++;
             } else if (counter) {
                 int temp = current.val;
 
@@ -218,20 +260,163 @@ static void move_down() {
                 array[get_idx(x, y - counter)].val = temp;
 
                 last = array[get_idx(x, y - counter)];
+                moves++;
             } else {
                 last = array[get_idx(x, y)];
             }
         }
     }
+    return moves;
 }
 
-int main (int argc, char *argv[]) 
-{
+static int calc_score() {
+    int ret = 0;
+
+    for (int i = 0; i < 16; i++) {
+        ret += array[i].val;
+    }
+
+    ret = count_free_tiles();
+
+    return ret;
+}
+
+static int calculate_move(int depth) {
+    int score = 0;
+    int moved;
+    int current_score = 0;
+    if (depth) {
+        spawn();
+        Tile temp_state[16];
+        cp_field(array, temp_state);
+        for (int i = 0; i < 4; i++) {
+            moved = 0;
+
+            switch (i) {
+            case 0:
+                moved = move_right();
+                break;
+            case 1:
+                moved = move_left();
+                break;
+            case 2:
+                moved = move_up();
+                break;
+            case 3:
+                moved = move_down();
+                break;
+            default:
+                break;
+            }
+
+            if (moved) {
+                current_score = calculate_move(depth - 1);
+            
+                if (current_score && current_score > score) {
+                    score = current_score;
+                }
+            } else {
+                cp_field(temp_state, array);
+                return calc_score();
+            }
+
+            cp_field(temp_state, array);
+        }
+        if (score) {
+            return score;
+        }
+    }
+    return calc_score();
+}
+
+static int calc_wrapper(int depth) {
+    if (depth) {
+        int score = 0;
+        int move = -1;
+        int moved;
+        Tile state[16];
+
+        cp_field(array, state);
+        
+        for (int i = 0; i < 4; i++) {
+            moved = 0;
+            int current_score = 0;
+
+            switch (i) {
+            case 0:
+                moved = move_right();
+                break;
+            case 1:
+                moved = move_left();
+                break;
+            case 2:
+                moved = move_up();
+                break;
+            case 3:
+                moved = move_down();
+                break;
+            default:
+                break;
+            }
+
+            if (moved) {
+                current_score = calculate_move(depth - 1);
+                if (current_score && current_score > score) {
+                    score = current_score;
+                    move = i;
+                }
+            }
+            cp_field(state, array);
+        }
+        return move;
+    } else {
+        Tile state[16];
+        int moved;
+        int counter = 0;
+        int temp[4] = {0, 0, 0, 0};
+        cp_field(array, state);
+        
+        for (int i = 0; i < 4; i++) {
+            moved = 0;
+            int current_score = 0;
+
+            switch (i) {
+            case 0:
+                moved = move_right();
+                break;
+            case 1:
+                moved = move_left();
+                break;
+            case 2:
+                moved = move_up();
+                break;
+            case 3:
+                moved = move_down();
+                break;
+            default:
+                break;
+            }
+
+            if (moved) {
+                temp[counter] = i;
+                counter++;
+            } 
+            cp_field(state, array);
+        }
+        if (counter)
+            return temp[rand() % counter];
+    }
+    return -1;
+}
+
+static int play_game() {
     int right = 0;
     int left = 0;
     int up = 0;
     int down = 0;
-    int score = 0;
+    int valid_moves = 1;
+
+    srand(time(0));
 
     for (int i = 0; i < count_row; i++) {
         for (int j = 0; j < count_col; j++) {
@@ -244,16 +429,12 @@ int main (int argc, char *argv[])
     }
 
     print_field();
-
-    while (count_free_tiles() > 0) {
-        int rndm;
-
-        score += spawn(size);
-        print_field();
-
-        rndm = rand() % 4;
-        switch (rndm)
-        {
+    while (count_free_tiles() > 0 && valid_moves) {
+        int rndm = 0;
+        spawn();
+        // print_field();
+        rndm = calc_wrapper(11);
+        switch (rndm) {
         case 0:
             move_right();
             right++;
@@ -271,11 +452,27 @@ int main (int argc, char *argv[])
             down++;
             break;
         default:
+            valid_moves = 0;
             break;
         }
         
-        print_field();
+        print_field(array);
     }
     printf("r: %d, l: %d, u: %d, d: %d\n", right, left, up, down);
-    printf("score: %d", score);
+
+    int score;
+    for (int i = 0; i < 16; i++) {
+        score += array[i].val;
+    }
+    printf("score: %d\n", score);
+    
+    return calc_score();
+}
+
+int main (int argc, char *argv[])  {
+    int score = 0;
+    for (int i = 0; i < 1; i++) {
+        score += play_game();
+    }
+    // printf("Average: %f\n", (double)score / (double)100); 
 }
